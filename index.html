@@ -2,132 +2,119 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Feeder - Realtime</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Smart Shrimp Feeder • MQTT + Manual</title>
   <style>
     :root {
-      --bg: #f4f7f8; --panel: #ffffff; --ink: #172126; --muted: #65747b;
+      --bg: #f0f4f5; --panel: #ffffff; --ink: #172126; --muted: #65747b;
       --line: #d9e2e5; --teal: #0f8b8d; --teal-dark: #086568; --green: #2f9e44;
-      --amber: #d9822b; --red: #d64545; --shadow: 0 8px 24px rgba(23, 33, 38, 0.08);
+      --amber: #d9822b; --red: #d64545; --blue: #1a73e8; --shadow: 0 8px 24px rgba(23, 33, 38, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; line-height: 1.4; }
-    .container { max-width: 820px; margin: 0 auto; padding: 16px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; line-height: 1.5; }
+    .container { max-width: 860px; margin: 0 auto; padding: 16px; }
 
     header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 20px; border-bottom: 1px solid var(--line); margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    
-    /* === CSS BRAND MARK UNTUK GAMBAR === */
+    .brand { display: flex; align-items: center; gap: 12px; }
     .brand-mark {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      background: #fff;
-      border: 2px solid var(--teal);
-      flex-shrink: 0;
+      width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
+      overflow: hidden; background: #fff; border: 2px solid var(--teal); flex-shrink: 0;
     }
-    .brand-mark img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-    /* === END CSS === */
-    
+    .brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .brand h1 { font-size: 18px; font-weight: 700; }
-    .brand span { font-size: 12px; color: var(--muted); display: block; }
-    .status { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 12px; background: #e8f5f5; border-radius: 20px; color: var(--teal-dark); }
-    .status-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .brand span { font-size: 11px; color: var(--muted); display: block; }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .status { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 14px; background: #e8f5f5; border-radius: 20px; color: var(--teal-dark); white-space: nowrap; }
+    .status-dot { width: 9px; height: 9px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    .status-dot.disconnected { background: var(--red); animation: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
     .card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
     .card-desc { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
 
-    .flow-diagram { display: flex; justify-content: space-between; align-items: center; padding: 16px 8px; background: #f8fbfb; border-radius: 10px; margin-bottom: 20px; position: relative; }
-    .flow-diagram::before { content: ''; position: absolute; top: 28px; left: 15%; right: 15%; height: 2px; background: var(--line); z-index: 0; }
-    .flow-step { text-align: center; position: relative; z-index: 1; flex: 1; padding: 0 4px; }
-    .flow-icon { width: 48px; height: 48px; border-radius: 50%; background: #e8f1f1; display: grid; place-items: center; margin: 0 auto 8px; font-size: 20px; transition: all 0.3s; border: 3px solid transparent; }
-    .flow-step.active .flow-icon { background: var(--teal); color: white; border-color: var(--teal-dark); transform: scale(1.1); }
+    .mqtt-config { display: none; }
+
+    .flow-diagram { display: flex; justify-content: space-between; align-items: center; padding: 16px 8px; background: #f8fbfb; border-radius: 10px; margin-bottom: 20px; position: relative; flex-wrap: wrap; }
+    .flow-diagram::before { content: ''; position: absolute; top: 26px; left: 10%; right: 10%; height: 2px; background: var(--line); z-index: 0; }
+    .flow-step { text-align: center; position: relative; z-index: 1; flex: 1; min-width: 65px; }
+    .flow-icon { width: 44px; height: 44px; border-radius: 50%; background: #e8f1f1; display: grid; place-items: center; margin: 0 auto 6px; font-size: 18px; transition: all 0.3s; border: 3px solid transparent; }
+    .flow-step.active .flow-icon { background: var(--teal); color: white; border-color: var(--teal-dark); transform: scale(1.08); }
     .flow-step.done .flow-icon { background: var(--green); color: white; }
-    .flow-label { font-size: 11px; font-weight: 700; color: var(--muted); }
-    .flow-step.active .flow-label { color: var(--teal-dark); }
+    .flow-label { font-size: 10px; font-weight: 700; color: var(--muted); }
 
     .weight-display { text-align: center; padding: 20px; background: #f8fbfb; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--line); }
-    .weight-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-    .weight-value { font-size: 42px; font-weight: 800; color: var(--teal-dark); line-height: 1; }
+    .weight-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .weight-value { font-size: 44px; font-weight: 800; color: var(--teal-dark); line-height: 1; }
     .weight-unit { font-size: 16px; color: var(--muted); margin-left: 4px; }
-    .weight-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .weight-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
 
-    .target-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-bottom: 20px; }
-    .field label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
-    .field input, .field select { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 16px; background: #fbfdfd; }
-    .field input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.1); }
-
-    .mode-toggle { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-    .mode-toggle button { border: none; padding: 12px; background: #fbfdfd; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-    .mode-toggle button.active { background: var(--teal); color: white; }
-
-    .schedule-box { display: none; padding: 16px; background: #f8fbfb; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 20px; }
-    .schedule-box.active { display: block; }
-    .time-day-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; margin-bottom: 12px; align-items: end; }
-    .day-checks { display: flex; flex-wrap: wrap; gap: 8px; }
-    .day-checks label { font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); }
-    .day-checks input { accent-color: var(--teal); }
-    
-    .btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-primary { background: var(--teal); color: white; width: 100%; margin-top: 10px; }
+    .target-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin-bottom: 16px; }
+    .btn { padding: 10px 14px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-primary { background: var(--teal); color: white; }
     .btn-primary:hover:not(:disabled) { background: var(--teal-dark); }
     .btn-primary:disabled { background: #a0c4c5; cursor: not-allowed; }
-    .btn-sm { padding: 8px 12px; font-size: 12px; }
+    .btn-sm { padding: 8px 14px; font-size: 12px; background: #fff; border: 1px solid var(--line); }
+    .btn-sm:hover { background: #f0f4f5; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-connect { background: var(--green); color: white; }
+    .btn-connect:hover { background: #1e7e34; }
+    .btn-disconnect { background: var(--red); color: white; }
+    .btn-disconnect:hover { background: #c0392b; }
 
-    .schedule-list { display: grid; gap: 8px; margin-top: 12px; }
-    .schedule-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: white; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; }
-    .schedule-item .info { display: flex; flex-direction: column; }
-    .schedule-item .time { font-weight: 700; color: var(--teal-dark); font-family: monospace; font-size: 15px; }
-    .schedule-item .days { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .schedule-item .actions { display: flex; gap: 6px; align-items: center; }
-    .toggle-day { width: 36px; height: 20px; background: #cbd5e0; border-radius: 10px; position: relative; cursor: pointer; transition: 0.2s; }
-    .toggle-day.on { background: var(--teal); }
-    .toggle-day::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
-    .toggle-day.on::after { transform: translateX(16px); }
-    .del-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 4px; }
+    .control-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .ctrl-card { background: #f8fbfb; border: 1px solid var(--line); border-radius: 10px; padding: 16px; text-align: center; }
+    .ctrl-icon { font-size: 28px; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; }
+    .ctrl-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+    .toggle-btn { padding: 8px 16px; border-radius: 20px; border: 2px solid var(--line); background: #fff; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; min-width: 80px; }
+    .toggle-btn.on { background: var(--teal); color: white; border-color: var(--teal-dark); }
+    .toggle-btn.off { background: #fff; color: var(--muted); }
 
-    .next-box { text-align: center; padding: 12px; background: #e8f4ff; border-radius: 8px; margin-bottom: 16px; border: 1px solid #b3d9ff; display: none; }
-    .next-box.active { display: block; }
-    .next-box .label { font-size: 12px; color: var(--muted); }
-    .next-box .time { font-size: 22px; font-weight: 800; color: var(--teal-dark); font-family: monospace; margin: 4px 0; }
-    .next-box .countdown { font-size: 12px; color: var(--amber); }
-
-    .progress-wrap { margin-top: 16px; display: none; }
-    .progress-wrap.active { display: block; }
-    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .progress-bar { height: 8px; background: #e8f1f1; border-radius: 4px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.3s ease; }
-
-    .component-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
-    .comp-item { text-align: center; padding: 12px 8px; background: #f8fbfb; border-radius: 8px; }
-    .comp-icon { font-size: 22px; margin-bottom: 6px; }
-    .comp-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-    .comp-value { font-size: 12px; font-weight: 700; }
+    .component-status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .comp-item { text-align: center; padding: 10px 4px; background: #f8fbfb; border-radius: 8px; }
+    .comp-icon { font-size: 20px; margin-bottom: 4px; display: flex; justify-content: center; align-items: center; }
+    .comp-label { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+    .comp-value { font-size: 11px; font-weight: 700; }
     .comp-value.ok { color: var(--green); } .comp-value.wait { color: var(--amber); } .comp-value.off { color: var(--muted); }
 
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
-    .history-item:last-child { border-bottom: none; }
-    .history-time { color: var(--muted); font-size: 12px; }
-    .history-amount { font-weight: 700; color: var(--teal-dark); margin: 0 12px; }
-    .badge { padding: 4px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .schedule-box { display: none; padding: 14px; background: #f8fbfb; border-radius: 8px; border: 1px solid var(--line); margin-bottom: 16px; }
+    .schedule-box.active { display: block; }
+    .time-day-row { display: grid; grid-template-columns: 100px 1fr auto; gap: 8px; margin-bottom: 10px; align-items: end; }
+    .day-checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .day-checks label { font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px; background: #fff; padding: 3px 7px; border-radius: 4px; border: 1px solid var(--line); }
+    .day-checks input { accent-color: var(--teal); }
+    .schedule-list { display: grid; gap: 6px; margin-top: 10px; }
+    .schedule-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: white; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+
+    .next-box { text-align: center; padding: 10px; background: #e8f4ff; border-radius: 8px; margin-bottom: 14px; border: 1px solid #b3d9ff; display: none; }
+    .next-box.active { display: block; }
+    .progress-wrap { margin-top: 14px; display: none; }
+    .progress-wrap.active { display: block; }
+    .progress-bar { height: 7px; background: #e8f1f1; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--teal); width: 0%; transition: width 0.3s; }
+
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .badge { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
     .badge.ok { background: #e5f7e9; color: #146c2e; }
 
-    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: var(--shadow); display: none; z-index: 100; animation: slideIn 0.3s ease; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--ink); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; box-shadow: var(--shadow); display: none; z-index: 100; animation: slideIn 0.3s ease; }
     .toast.show { display: block; } .toast.error { background: var(--red); } .toast.success { background: var(--green); }
     @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
+    /* Servo SVG Animations */
+    .servo-svg { width: 32px; height: 32px; transition: transform 0.3s ease; }
+    .servo-arm { transition: transform 0.5s ease; transform-origin: 16px 20px; }
+    .servo-svg.active .servo-arm { transform: rotate(50deg); }
+    
+    @keyframes servoPulse {
+      0%, 100% { filter: drop-shadow(0 0 0px rgba(15, 139, 141, 0)); }
+      50% { filter: drop-shadow(0 0 3px rgba(15, 139, 141, 0.5)); }
+    }
+    .servo-svg.active { animation: servoPulse 1.5s infinite; }
+
     @media (max-width: 600px) {
-      .target-row, .time-day-row { grid-template-columns: 1fr; }
+      .control-grid { grid-template-columns: 1fr 1fr; }
       .component-status { grid-template-columns: 1fr 1fr; }
       .flow-diagram::before { display: none; }
     }
@@ -137,303 +124,653 @@
   <div class="container">
     <header>
       <div class="brand">
-        <!-- === BRAND MARK DENGAN FILE LOKAL === -->
         <div class="brand-mark">
-          <img src="udang.png" 
-               alt="udang" 
-               onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%230f8b8d%27/%3E%3Ctext x=%2750%27 y=%2762%27 text-anchor=%27middle%27 fill=%27white%27 font-size=%2745%27%3E🦐%3C/text%3E%3C/svg%3E'">
+          <img src="udang.png" alt="🦐" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%230f8b8d%27/%3E%3Ctext x=%2750%27 y=%2762%27 text-anchor=%27middle%27 fill=%27white%27 font-size=%2745%27%3E🦐%3C/text%3E%3C/svg%3E'">
         </div>
-        <!-- === END BRAND MARK === -->
-        
-        <div>
-          <h1>shrimp feeding tool</h1>
-          <span></span>
-        </div>
+        <h1>shrimp feeder</h1>
       </div>
-      <div class="status">
-        <span class="status-dot"></span>
-        <span id="ntpClock">--:--:--</span>
+      <div class="header-right">
+        <button class="btn btn-connect btn-sm" id="mqttConnectBtn">🔌 Connect</button>
+        <div class="status">
+          <span class="status-dot disconnected" id="mqttDot"></span>
+          <span id="mqttStatus">MQTT Disconnected</span>
+        </div>
       </div>
     </header>
 
+    <!-- ALUR SISTEM -->
     <div class="card">
       <h2 class="card-title">🔄 Alur Sistem</h2>
-      <p class="card-desc"></p>
-      
       <div class="flow-diagram">
-        <div class="flow-step" id="step1"><div class="flow-icon">🪣</div><div class="flow-label">Tank</div></div>
-        <div class="flow-step" id="step2"><div class="flow-icon">⚙️</div><div class="flow-label">Stepper</div></div>
-        <div class="flow-step" id="step3"><div class="flow-icon">⚖️</div><div class="flow-label">Load Cell</div></div>
-        <div class="flow-step" id="step4"><div class="flow-icon">💨</div><div class="flow-label">Blower</div></div>
+        <div class="flow-step" id="step1"><div class="flow-icon">⚙️</div><div class="flow-label">Motor Buka</div></div>
+        <div class="flow-step" id="step2"><div class="flow-icon">⚖️</div><div class="flow-label">Timbang</div></div>
+        <div class="flow-step" id="step3">
+          <div class="flow-icon" id="flowServoIcon">
+            <svg class="servo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="14" width="20" height="12" rx="3" fill="currentColor" opacity="0.3"/>
+              <rect x="8" y="16" width="16" height="8" rx="2" fill="currentColor" opacity="0.6"/>
+              <circle cx="16" cy="20" r="4" fill="currentColor"/>
+              <rect class="servo-arm" x="15" y="6" width="2" height="12" rx="1" fill="currentColor"/>
+              <rect class="servo-arm" x="12" y="4" width="8" height="3" rx="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="flow-label">Servo Open</div>
+        </div>
+        <div class="flow-step" id="step4"><div class="flow-icon">💨</div><div class="flow-label">SSR Blower</div></div>
       </div>
 
       <div class="weight-display">
-        <div class="weight-label">Berat Terdeteksi</div>
-        <div><span class="weight-value" id="weightVal">0.00</span><span class="weight-unit">kg</span></div>
-        <div class="weight-note" id="weightNote">Siap • Sensor stabil</div>
+        <div class="weight-label">Berat Loadcell (Realtime)</div>
+        <div><span class="weight-value" id="weightVal">0</span><span class="weight-unit">gram</span></div>
+        <div class="weight-note" id="weightNote">Menunggu data hardware...</div>
       </div>
 
+      <!-- TARGET BERAT -->
       <div class="target-row">
-        <div class="field"><label>🎯 Target Berat (kg)</label><input type="number" id="targetInput" min="0.1" max="10" step="0.1" value="1.0"></div>
+        <div class="field"><label>⚖️ Min Berat 500 Gram  </label><input type="number" id="targetInput" min="500" max="10000" step="10" value="1000"></div>
         <button class="btn btn-sm" id="saveTargetBtn">💾 Simpan</button>
       </div>
 
-      <label style="font-size:13px;font-weight:700;margin-bottom:8px;display:block">⚙️ Mode Operasi</label>
-      <div class="mode-toggle">
-        <button class="active" id="modeManual">🔘 Manual</button>
-        <button id="modeAuto">🕐 Penjadwalan</button>
-      </div>
-
-      <div class="schedule-box" id="scheduleBox">
-        <div class="time-day-row">
-          <div class="field"><label>Jam (24h)</label><input type="time" id="schedTime" step="60"></div>
-          <div class="field"><label>Hari</label>
-            <div class="day-checks">
-              <label><input type="checkbox" value="1" checked> Sen</label>
-              <label><input type="checkbox" value="2"> Sel</label>
-              <label><input type="checkbox" value="3" checked> Rab</label>
-              <label><input type="checkbox" value="4"> Kam</label>
-              <label><input type="checkbox" value="5" checked> Jum</label>
-              <label><input type="checkbox" value="6"> Sab</label>
-              <label><input type="checkbox" value="0"> Min</label>
-            </div>
-          </div>
-          <button class="btn btn-sm" id="addSchedBtn" style="align-self:end;">+ Tambah</button>
+      <!-- KONTROL MANUAL (OFFLINE/ONLINE) -->
+      <h3 style="font-size:14px; margin-bottom:10px;">🕹️ Kontrol Hardware </h3>
+      <div class="control-grid">
+        <!-- MOTOR KATUP -->
+        <div class="ctrl-card">
+          <div class="ctrl-icon">⚙️</div>
+          <div class="ctrl-label">Motor Katup</div>
+          <button class="toggle-btn off" id="btnMotor">BUKA</button>
+          <div style="font-size:10px; color:var(--muted); margin-top:6px;">Encoder: <span id="encoderVal">-</span></div>
         </div>
-        <div class="schedule-list" id="schedList"></div>
+        <!-- SSR BLOWER -->
+        <div class="ctrl-card">
+          <div class="ctrl-icon">💨</div>
+          <div class="ctrl-label">SSR Blower</div>
+          <button class="toggle-btn off" id="btnSSR">OFF</button>
+        </div>
+        <!-- SERVO -->
+        <div class="ctrl-card">
+          <div class="ctrl-icon" id="servoIcon">
+            <svg class="servo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="14" width="20" height="12" rx="3" fill="#65747b" opacity="0.3"/>
+              <rect x="8" y="16" width="16" height="8" rx="2" fill="#65747b" opacity="0.6"/>
+              <circle cx="16" cy="20" r="4" fill="#65747b"/>
+              <rect class="servo-arm" x="15" y="6" width="2" height="12" rx="1" fill="#65747b"/>
+              <rect class="servo-arm" x="12" y="4" width="8" height="3" rx="1.5" fill="#65747b"/>
+            </svg>
+          </div>
+          <div class="ctrl-label">Servo</div>
+          <button class="toggle-btn off" id="btnServo">TUTUP (0°)</button>
+        </div>
       </div>
 
-      <div class="next-box" id="nextBox">
-        <div class="label">Jadwal Berikutnya</div>
-        <div class="time" id="nextTime">--:--</div>
-        <div class="countdown" id="nextCountdown">-</div>
+      <!-- MODE JADWAL (Auto) -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:13px;font-weight:700;">⏱️ Mode Jadwal (Auto Feed)</label>
+        <div class="schedule-box" id="scheduleBox">
+          <div class="time-day-row">
+            <div class="field"><label>Jam</label><input type="time" id="schedTime" step="60"></div>
+            <div class="field"><label>Hari</label>
+              <div class="day-checks">
+                <label><input type="checkbox" value="1"> Sen</label>
+                <label><input type="checkbox" value="2"> Sel</label>
+                <label><input type="checkbox" value="3"> Rab</label>
+                <label><input type="checkbox" value="4"> Kam</label>
+                <label><input type="checkbox" value="5"> Jum</label>
+                <label><input type="checkbox" value="6"> Sab</label>
+                <label><input type="checkbox" value="0"> Min</label>
+              </div>
+            </div>
+            <button class="btn btn-sm" id="addSchedBtn">+ Tambah</button>
+          </div>
+          <div class="schedule-list" id="schedList"></div>
+        </div>
+        <button class="btn btn-sm" id="toggleSched" style="margin-top:6px;">📅 Tampilkan Jadwal</button>
       </div>
 
-      <button class="btn btn-primary" id="feedBtn">🚀 Mulai Pemberian Pakan</button>
+      <button class="btn btn-primary" id="feedBtn" style="width:100%;"> MULAI FEEDING </button>
 
       <div class="progress-wrap" id="progressWrap">
-        <div class="progress-label"><span>Progress</span><span id="progPercent">0%</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;"><span>Progress</span><span id="progPercent">0%</span></div>
         <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
       </div>
 
+      <!-- STATUS KOMPONEN -->
       <div class="component-status">
-        <div class="comp-item"><div class="comp-icon">⚙️</div><div class="comp-label">Stepper Valve</div><div class="comp-value off" id="stStepper">Tertutup</div></div>
-        <div class="comp-item"><div class="comp-icon">⚖️</div><div class="comp-label">Load Cell</div><div class="comp-value wait" id="stLoad">Menunggu</div></div>
-        <div class="comp-item"><div class="comp-icon">💨</div><div class="comp-label">Blower</div><div class="comp-value off" id="stBlower">OFF</div></div>
+        <div class="comp-item"><div class="comp-icon">⚙️</div><div class="comp-label">Motor</div><div class="comp-value off" id="stMotor">Tertutup</div></div>
+        <div class="comp-item"><div class="comp-icon">⚖️</div><div class="comp-label">LoadCell</div><div class="comp-value wait" id="stLoad">0 g</div></div>
+        <div class="comp-item">
+          <div class="comp-icon" id="statusServoIcon">
+            <svg class="servo-svg" width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="14" width="20" height="12" rx="3" fill="#65747b" opacity="0.3"/>
+              <rect x="8" y="16" width="16" height="8" rx="2" fill="#65747b" opacity="0.6"/>
+              <circle cx="16" cy="20" r="4" fill="#65747b"/>
+              <rect class="servo-arm" x="15" y="6" width="2" height="12" rx="1" fill="#65747b"/>
+              <rect class="servo-arm" x="12" y="4" width="8" height="3" rx="1.5" fill="#65747b"/>
+            </svg>
+          </div>
+          <div class="comp-label">Servo</div><div class="comp-value off" id="stServo">0°</div>
+        </div>
+        <div class="comp-item"><div class="comp-icon">💨</div><div class="comp-label">SSR</div><div class="comp-value off" id="stSSR">OFF</div></div>
       </div>
     </div>
 
+    <!-- RIWAYAT -->
     <div class="card">
-      <h2 class="card-title">📋 Riwayat</h2>
+      <h2 class="card-title">📋 Riwayat Feeding</h2>
       <div id="historyList">
-        <div class="history-item"><div><div>Hari ini, 06:00</div><div class="history-time">Otomatis</div></div><span class="history-amount">1.0 kg</span><span class="badge ok">✓ Selesai</span></div>
+        <div class="history-item"><div>Belum ada riwayat</div><span class="badge ok">-</span></div>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast">Notifikasi</div>
 
+  <!-- MQTT.js -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script>
-    const state = {
-      target: 1.0, currentW: 0, isFeeding: false, stage: 0, simInterval: null,
-      mode: 'manual', schedules: [], 
-      triggeredKeys: new Set(),
-    };
+    (function() {
+      // ==================== STATE ====================
+      const state = {
+        target: 1000,
+        currentWeight: 0,
+        encoderCount: 0,
+        motorOpen: false,
+        ssrOn: false,
+        servoCmd: 0,
+        isFeeding: false,
+        feedingStage: 0,
+        simInterval: null,
+        blowInterval: null,
+        schedules: [],
+        triggeredKeys: new Set(),
+        mqttClient: null,
+        mqttConnected: false,
+        topicPrefix: 'shrimp/feeder',
+        modeOnline: false
+      };
 
-    const els = {
-      ntp: document.getElementById('ntpClock'), weight: document.getElementById('weightVal'), note: document.getElementById('weightNote'),
-      target: document.getElementById('targetInput'), saveT: document.getElementById('saveTargetBtn'),
-      mMan: document.getElementById('modeManual'), mAuto: document.getElementById('modeAuto'),
-      schedBox: document.getElementById('scheduleBox'), schedTime: document.getElementById('schedTime'),
-      addS: document.getElementById('addSchedBtn'), schedList: document.getElementById('schedList'),
-      nextBox: document.getElementById('nextBox'), nextT: document.getElementById('nextTime'), nextC: document.getElementById('nextCountdown'),
-      feedBtn: document.getElementById('feedBtn'),
-      pWrap: document.getElementById('progressWrap'), pFill: document.getElementById('progFill'), pPct: document.getElementById('progPercent'),
-      stS: document.getElementById('stStepper'), stL: document.getElementById('stLoad'), stB: document.getElementById('stBlower'),
-      hist: document.getElementById('historyList'), toast: document.getElementById('toast'),
-      steps: {1:document.getElementById('step1'),2:document.getElementById('step2'),3:document.getElementById('step3'),4:document.getElementById('step4')}
-    };
+      // ==================== DOM ELEMENTS ====================
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        mqttDot: $('mqttDot'), mqttStatus: $('mqttStatus'),
+        weight: $('weightVal'), note: $('weightNote'), encoderVal: $('encoderVal'),
+        target: $('targetInput'), saveT: $('saveTargetBtn'),
+        btnMotor: $('btnMotor'), btnSSR: $('btnSSR'), btnServo: $('btnServo'),
+        scheduleBox: $('scheduleBox'), toggleSched: $('toggleSched'),
+        schedTime: $('schedTime'), addS: $('addSchedBtn'), schedList: $('schedList'),
+        feedBtn: $('feedBtn'), progressWrap: $('progressWrap'), progFill: $('progFill'), progPct: $('progPercent'),
+        stMotor: $('stMotor'), stLoad: $('stLoad'), stServo: $('stServo'), stSSR: $('stSSR'),
+        hist: $('historyList'), toast: $('toast'),
+        steps: {1:$('step1'),2:$('step2'),3:$('step3'),4:$('step4')},
+        servoIcon: $('servoIcon'),
+        flowServoIcon: $('flowServoIcon'),
+        statusServoIcon: $('statusServoIcon'),
+        mqttConnectBtn: $('mqttConnectBtn')
+      };
 
-    const pad = n => String(n).padStart(2, '0');
-    const getDayName = idx => ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][idx];
+      const pad = (n) => String(n).padStart(2, '0');
+      const getDayName = (i) => ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][i];
 
-    function tick() {
-      const now = new Date();
-      els.ntp.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-      if (state.mode === 'auto' && !state.isFeeding) checkRealtimeTrigger(now);
-      updateNextInfo(now);
-    }
-    setInterval(tick, 1000);
-    tick();
+      // ==================== SERVO ANIMATION ====================
+      function updateServoAnimation(angle) {
+        const servoElements = [
+          els.servoIcon?.querySelector('.servo-svg'),
+          els.flowServoIcon?.querySelector('.servo-svg'),
+          els.statusServoIcon?.querySelector('.servo-svg')
+        ];
 
-    function checkRealtimeTrigger(now) {
-      const h = now.getHours();
-      const m = now.getMinutes();
-      const day = now.getDay();
-      const dateKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-      const currentTime = `${pad(h)}:${pad(m)}`;
-
-      state.schedules.forEach(s => {
-        if (!s.active || s.time !== currentTime || !s.days.includes(day)) return;
-        const key = `${s.id}_${dateKey}`;
-        if (!state.triggeredKeys.has(key)) {
-          state.triggeredKeys.add(key);
-          startFeeding(`Jadwal: ${s.time} (${getDayName(day)})`);
-          if (state.triggeredKeys.size > 100) state.triggeredKeys.clear();
-        }
-      });
-    }
-
-    els.mMan.onclick = () => setMode('manual');
-    els.mAuto.onclick = () => setMode('auto');
-    
-    function setMode(m) {
-      state.mode = m;
-      els.mMan.classList.toggle('active', m==='manual');
-      els.mAuto.classList.toggle('active', m==='auto');
-      els.schedBox.classList.toggle('active', m==='auto');
-      els.nextBox.classList.toggle('active', m==='auto');
-      els.feedBtn.disabled = (m==='auto');
-      els.feedBtn.innerHTML = m==='auto' ? '⏸️ Mode Jadwal Aktif' : '🚀 Mulai Pemberian Pakan';
-      showToast(m==='manual' ? '🔘 Mode Manual' : '🕐 Mode Jadwal Realtime Aktif', 'info');
-    }
-
-    els.saveT.onclick = () => {
-      const v = parseFloat(els.target.value);
-      if (isNaN(v) || v<0.1 || v>10) return showToast('Target harus 0.1 - 10 kg','error');
-      state.target = v; showToast('✓ Target disimpan','success'); resetProgress();
-    };
-
-    els.addS.onclick = () => {
-      const t = els.schedTime.value;
-      if (!t) return showToast('Pilih jam dulu','error');
-      const days = Array.from(document.querySelectorAll('.day-checks input:checked')).map(c => parseInt(c.value));
-      if (days.length===0) return showToast('Pilih minimal 1 hari','error');
-      const exists = state.schedules.some(s => s.time === t && days.some(d => s.days.includes(d)) && s.active);
-      if (exists) return showToast('Jadwal sudah ada','error');
-      state.schedules.push({ id: Date.now(), time: t, days, active: true });
-      state.schedules.sort((a,b) => a.time.localeCompare(b.time));
-      renderScheds(); showToast('✓ Jadwal ditambahkan (realtime)','success');
-    };
-
-    function renderScheds() {
-      els.schedList.innerHTML = '';
-      if (state.schedules.length===0) {
-        els.schedList.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px;text-align:center">Belum ada jadwal realtime</div>';
-        return;
-      }
-      state.schedules.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'schedule-item';
-        div.innerHTML = `
-          <div class="info"><span class="time">${s.time}</span><span class="days">${s.days.map(d=>getDayName(d)).join(', ')}</span></div>
-          <div class="actions">
-            <div class="toggle-day ${s.active?'on':''}" data-id="${s.id}" title="Aktif/Nonaktif"></div>
-            <button class="del-btn" data-id="${s.id}" title="Hapus">✕</button>
-          </div>`;
-        els.schedList.appendChild(div);
-      });
-      document.querySelectorAll('.toggle-day').forEach(btn => {
-        btn.onclick = () => {
-          const s = state.schedules.find(x=>x.id===parseInt(btn.dataset.id));
-          s.active = !s.active;
-          btn.classList.toggle('on', s.active);
-          showToast(s.active ? '✅ Jadwal diaktifkan' : '⏸️ Jadwal dinonaktifkan', 'info');
-        };
-      });
-      document.querySelectorAll('.del-btn').forEach(btn => {
-        btn.onclick = () => {
-          const id = parseInt(btn.dataset.id);
-          state.schedules = state.schedules.filter(x=>x.id!==id);
-          renderScheds(); showToast('Jadwal dihapus','info');
-        };
-      });
-    }
-    renderScheds();
-
-    function updateNextInfo(now) {
-      if (state.mode!=='auto') { els.nextBox.classList.remove('active'); return; }
-      els.nextBox.classList.add('active');
-      const nowMin = now.getHours()*60 + now.getMinutes();
-      const nowDay = now.getDay();
-      let best = null, minDiff = Infinity;
-      state.schedules.forEach(s => {
-        if (!s.active) return;
-        const [h,m] = s.time.split(':').map(Number);
-        const sMin = h*60 + m;
-        if (s.days.includes(nowDay) && sMin > nowMin) {
-          const diff = sMin - nowMin;
-          if (diff < minDiff) { minDiff = diff; best = { ...s, dayStr: getDayName(nowDay) }; }
-        }
-        for (let i = 1; i <= 7; i++) {
-          const nextDay = (nowDay + i) % 7;
-          if (s.days.includes(nextDay)) {
-            const diff = (i * 1440 - nowMin) + sMin;
-            if (diff < minDiff) { minDiff = diff; best = { ...s, dayStr: getDayName(nextDay) }; }
-            break;
+        servoElements.forEach(svg => {
+          if (svg) {
+            if (angle === 50) {
+              svg.classList.add('active');
+            } else {
+              svg.classList.remove('active');
+            }
           }
+        });
+      }
+
+      // ==================== MQTT CONNECTION ====================
+      function connectMQTT() {
+        if (state.mqttConnected) {
+          disconnectMQTT();
+          return;
         }
-      });
-      if (!best) { els.nextT.textContent = '-'; els.nextC.textContent = 'Tidak ada jadwal aktif'; return; }
-      els.nextT.textContent = `${best.time} | ${best.dayStr}`;
-      els.nextC.textContent = minDiff < 60 ? `dalam ${minDiff} menit` : `dalam ${Math.floor(minDiff/60)}j ${minDiff%60}m`;
-    }
 
-    els.feedBtn.onclick = () => {
-      if (state.mode==='auto') return;
-      const v = parseFloat(els.target.value);
-      if (isNaN(v) || v<0.1 || v>10) return showToast('Set target dulu','error');
-      state.target = v; startFeeding('Manual');
-    };
+        const broker = 'broker.emqx.io';
+        const port = 8084;
+        const prefix = 'shrimp/feeder';
+        state.topicPrefix = prefix;
 
-    function startFeeding(src='Manual') {
-      if (state.isFeeding) return;
-      state.isFeeding = true; state.currentW = 0; state.stage = 1;
-      els.feedBtn.disabled = true; els.pWrap.classList.add('active');
-      updateStep(1); updateComp('stS','wait','Membuka...');
-      showToast(`⚙️ [${src}] Stepper membuka valve...`, 'info');
-      setTimeout(()=>{
-        if(!state.isFeeding) return;
-        state.stage=2; updateStep(2); updateComp('stS','ok','Terbuka ✓'); updateComp('stL','wait','Mengukur...');
-        state.simInterval = setInterval(()=>{
-          if(!state.isFeeding) return;
-          state.currentW += 0.05;
-          if(state.currentW >= state.target) state.currentW = state.target;
-          els.weight.textContent = state.currentW.toFixed(2);
-          updateProg(); updateComp('stL','wait',`${state.currentW.toFixed(2)} / ${state.target} kg`);
-          if(state.currentW >= state.target) { clearInterval(state.simInterval); completeWeigh(); }
-        }, 200);
-      }, 1500);
-    }
+        const wsUrl = `wss://${broker}:${port}/mqtt`;
+        state.mqttClient = mqtt.connect(wsUrl, {
+          clientId: 'web_feeder_' + Math.random().toString(16).substr(2, 8),
+          clean: true,
+          reconnectPeriod: 5000
+        });
 
-    function completeWeigh() {
-      state.stage=3; updateStep(3);
-      updateComp('stS','ok','Tertutup ✓'); updateComp('stL','ok','Target ✓'); updateComp('stB','wait','Siap...');
-      showToast('✅ Berat tercapai! 💨 Blower aktif...','success');
-      setTimeout(()=>{
-        if(!state.isFeeding) return;
-        state.stage=4; updateStep(4); updateComp('stB','ok','ON ✓');
-        showToast('🌀 Pakan ditiup ke kolam...','info');
-        setTimeout(()=>stopFeeding(true), 2000);
-      }, 2000);
-    }
+        state.mqttClient.on('connect', () => {
+          state.mqttConnected = true;
+          state.modeOnline = true;
+          updateMQTTUI(true);
+          state.mqttClient.subscribe(`${prefix}/state`);
+          state.mqttClient.subscribe(`${prefix}/encoder`);
+          state.mqttClient.subscribe(`${prefix}/weight`);
+          showToast('✅ Terhubung ke MQTT Broker!', 'success');
+          publishCmd({ action: 'get_status' });
+        });
 
-    function stopFeeding(ok) {
-      state.isFeeding=false; clearInterval(state.simInterval);
-      els.feedBtn.disabled = (state.mode==='auto');
-      els.feedBtn.innerHTML = state.mode==='auto' ? '⏸️ Mode Jadwal Aktif' : '🚀 Mulai Pemberian Pakan';
-      if(ok) { showToast('✓ Proses selesai!','success'); addHist(state.target, 'Otomatis'); setTimeout(resetFlow, 2000); }
-      else { showToast('⚠️ Dibatalkan','error'); }
-    }
+        state.mqttClient.on('message', (topic, message) => {
+          try {
+            const payload = JSON.parse(message.toString());
+            handleMQTTMessage(topic, payload);
+          } catch (e) {
+            console.log('MQTT raw:', message.toString());
+          }
+        });
 
-    function updateStep(s) { Object.values(els.steps).forEach(e=>e.classList.remove('active','done')); for(let i=1;i<s;i++)els.steps[i]?.classList.add('done'); if(s<=4)els.steps[s]?.classList.add('active'); }
-    function updateComp(id,status,text) { const el=els[id]; el.textContent=text; el.className=`comp-value ${status}`; }
-    function updateProg() { const p=Math.min(100,Math.round((state.currentW/state.target)*100)); els.pFill.style.width=`${p}%`; els.pPct.textContent=`${p}%`; }
-    function resetProgress() { els.pFill.style.width='0%'; els.pPct.textContent='0%'; els.pWrap.classList.remove('active'); }
-    function resetFlow() { state.currentW=0; state.stage=0; els.weight.textContent='0.00'; els.note.textContent='Siap • Sensor stabil'; els.note.className='weight-note'; updateComp('stS','off','Tertutup'); updateComp('stL','wait','Menunggu'); updateComp('stB','off','OFF'); Object.values(els.steps).forEach(e=>e.classList.remove('active','done')); resetProgress(); }
-    function addHist(w,t) { const now=new Date(); const div=document.createElement('div'); div.className='history-item'; div.innerHTML=`<div><div>Hari ini, ${pad(now.getHours())}:${pad(now.getMinutes())}</div><div class="history-time">${t}</div></div><span class="history-amount">${w.toFixed(1)} kg</span><span class="badge ok">✓ Selesai</span>`; els.hist.insertBefore(div,els.hist.firstChild); if(els.hist.children.length>4)els.hist.removeChild(els.hist.lastChild); }
-    function showToast(msg,type='info') { els.toast.textContent=msg; els.toast.className=`toast ${type} show`; setTimeout(()=>els.toast.classList.remove('show'),3500); }
-    els.target.onkeypress = (e)=>{ if(e.key==='Enter')els.saveT.click(); };
+        state.mqttClient.on('close', () => {
+          state.mqttConnected = false;
+          state.modeOnline = false;
+          updateMQTTUI(false);
+          showToast('⚠️ MQTT Disconnected', 'error');
+        });
+
+        state.mqttClient.on('error', (err) => {
+          console.error('MQTT Error:', err);
+          showToast('❌ MQTT Error: ' + err.message, 'error');
+        });
+      }
+
+      function disconnectMQTT() {
+        if (state.mqttClient) {
+          state.mqttClient.end(true);
+          state.mqttClient = null;
+          state.mqttConnected = false;
+          state.modeOnline = false;
+          updateMQTTUI(false);
+          showToast('🔌 MQTT Disconnected', 'info');
+        }
+      }
+
+      function publishCmd(cmd) {
+        if (!state.mqttClient || !state.mqttConnected) {
+          showToast('⚠️ MQTT tidak terhubung! Hardware dalam mode manual.', 'error');
+          return false;
+        }
+        const topic = `${state.topicPrefix}/cmd`;
+        state.mqttClient.publish(topic, JSON.stringify(cmd));
+        console.log('📤 Publish:', topic, cmd);
+        return true;
+      }
+
+      function handleMQTTMessage(topic, payload) {
+        if (topic.endsWith('/weight')) {
+          state.currentWeight = parseFloat(payload.weight) || 0;
+          els.weight.textContent = Math.round(state.currentWeight);
+          updateWeightDisplay();
+        } else if (topic.endsWith('/encoder')) {
+          state.encoderCount = parseInt(payload.count) || 0;
+          els.encoderVal.textContent = state.encoderCount;
+          updateMotorUI();
+        } else if (topic.endsWith('/state')) {
+          if (payload.weight !== undefined) {
+            state.currentWeight = parseFloat(payload.weight) || 0;
+            els.weight.textContent = Math.round(state.currentWeight);
+          }
+          if (payload.encoder !== undefined) {
+            state.encoderCount = parseInt(payload.encoder) || 0;
+            els.encoderVal.textContent = state.encoderCount;
+          }
+          if (payload.motor !== undefined) {
+            state.motorOpen = payload.motor === 1 || payload.motor === true;
+            updateMotorUI();
+          }
+          if (payload.ssr !== undefined) {
+            state.ssrOn = payload.ssr === 1 || payload.ssr === true;
+            updateSSRUI();
+          }
+          if (payload.servo !== undefined) {
+            state.servoCmd = parseInt(payload.servo) || 0;
+            updateServoUI();
+          }
+          updateWeightDisplay();
+          updateComponentStatus();
+        }
+      }
+
+      function updateMQTTUI(connected) {
+        els.mqttDot.classList.toggle('disconnected', !connected);
+        els.mqttStatus.textContent = connected ? 'MQTT Connected' : 'MQTT Disconnected';
+        
+        if (els.mqttConnectBtn) {
+          els.mqttConnectBtn.textContent = connected ? '🔌 Disconnect' : '🔌 Connect';
+          els.mqttConnectBtn.className = connected ? 'btn btn-disconnect btn-sm' : 'btn btn-connect btn-sm';
+        }
+      }
+
+      // ==================== UI UPDATES ====================
+      function updateMotorUI() {
+        els.btnMotor.textContent = state.motorOpen ? 'TUTUP' : 'BUKA';
+        els.btnMotor.classList.toggle('on', state.motorOpen);
+        els.btnMotor.classList.toggle('off', !state.motorOpen);
+        els.stMotor.textContent = state.motorOpen ? 'Terbuka' : 'Tertutup';
+        els.stMotor.className = 'comp-value ' + (state.motorOpen ? 'ok' : 'off');
+      }
+
+      function updateSSRUI() {
+        els.btnSSR.textContent = state.ssrOn ? 'ON' : 'OFF';
+        els.btnSSR.classList.toggle('on', state.ssrOn);
+        els.btnSSR.classList.toggle('off', !state.ssrOn);
+        els.stSSR.textContent = state.ssrOn ? 'ON' : 'OFF';
+        els.stSSR.className = 'comp-value ' + (state.ssrOn ? 'ok' : 'off');
+      }
+
+      function updateServoUI() {
+        els.btnServo.textContent = state.servoCmd === 50 ? 'BUKA (50°)' : 'TUTUP (0°)';
+        els.btnServo.classList.toggle('on', state.servoCmd === 50);
+        els.btnServo.classList.toggle('off', state.servoCmd !== 50);
+        els.stServo.textContent = state.servoCmd + '°';
+        els.stServo.className = 'comp-value ' + (state.servoCmd === 50 ? 'ok' : 'off');
+        updateServoAnimation(state.servoCmd);
+      }
+
+      function updateWeightDisplay() {
+        if (state.currentWeight < 10) {
+          els.note.textContent = 'Loadcell kosong / stabil';
+        } else if (state.isFeeding && state.currentWeight >= state.target) {
+          els.note.textContent = 'Target tercapai!';
+        } else if (state.isFeeding) {
+          els.note.textContent = 'Menimbang...';
+        }
+        els.stLoad.textContent = Math.round(state.currentWeight) + ' g';
+      }
+
+      function updateComponentStatus() {
+        updateMotorUI();
+        updateSSRUI();
+        updateServoUI();
+        updateWeightDisplay();
+      }
+
+      // ==================== KONTROL HARDWARE ====================
+      function sendMotorCommand() {
+        const newState = !state.motorOpen;
+        if (state.mqttConnected) {
+          publishCmd({ action: 'motor', value: newState ? 1 : 0 });
+        } else {
+          state.motorOpen = newState;
+          updateMotorUI();
+          showToast(`Motor ${newState ? 'BUKA' : 'TUTUP'} (manual offline)`, 'info');
+        }
+      }
+
+      function sendSSRCommand() {
+        const newState = !state.ssrOn;
+        if (state.mqttConnected) {
+          publishCmd({ action: 'ssr', value: newState ? 1 : 0 });
+        } else {
+          state.ssrOn = newState;
+          updateSSRUI();
+          showToast(`SSR ${newState ? 'ON' : 'OFF'} (manual offline)`, 'info');
+        }
+      }
+
+      function sendServoCommand() {
+        const newAngle = state.servoCmd === 50 ? 0 : 50;
+        if (state.mqttConnected) {
+          publishCmd({ action: 'servo', value: newAngle });
+        } else {
+          state.servoCmd = newAngle;
+          updateServoUI();
+          showToast(`Servo ${newAngle}° (manual offline)`, 'info');
+        }
+      }
+
+      // ==================== AUTO FEEDING SEQUENCE ====================
+      function startFeedingSequence() {
+        if (state.isFeeding) return;
+        const target = parseInt(els.target.value);
+        if (isNaN(target) || target < 500) return showToast('Target minimal 500 gram', 'error');
+        state.target = target;
+
+        state.isFeeding = true;
+        state.feedingStage = 1;
+        els.progressWrap.classList.add('active');
+        updateStep(1);
+        els.note.textContent = 'Sequence: Motor buka katup...';
+
+        if (state.mqttConnected) {
+          publishCmd({ action: 'motor', value: 1 });
+        } else {
+          state.motorOpen = true;
+          updateMotorUI();
+        }
+
+        showToast('Mulai Feeding...', 'info');
+
+        setTimeout(() => {
+          if (!state.isFeeding) return;
+          state.feedingStage = 2;
+          updateStep(2);
+          els.note.textContent = 'Menimbang pakan...';
+
+          if (!state.mqttConnected) {
+            state.simInterval = setInterval(() => {
+              if (!state.isFeeding) { clearInterval(state.simInterval); return; }
+              state.currentWeight += 40;
+              if (state.currentWeight >= state.target) {
+                state.currentWeight = state.target;
+                els.weight.textContent = Math.round(state.currentWeight);
+                updateProg();
+                clearInterval(state.simInterval);
+                completeWeighing();
+              }
+              els.weight.textContent = Math.round(state.currentWeight);
+              updateProg();
+            }, 150);
+          } else {
+            checkWeightFromHardware();
+          }
+        }, 2000);
+      }
+
+      function checkWeightFromHardware() {
+        if (!state.isFeeding) return;
+        if (state.currentWeight >= state.target) {
+          completeWeighing();
+        } else {
+          setTimeout(checkWeightFromHardware, 300);
+        }
+      }
+
+      function completeWeighing() {
+        state.feedingStage = 3;
+        updateStep(3);
+        
+        if (state.mqttConnected) {
+          publishCmd({ action: 'motor', value: 0 });
+        } else {
+          state.motorOpen = false;
+          updateMotorUI();
+        }
+
+        showToast('✅ Berat tercapai! Motor tutup, servo buka...', 'success');
+
+        setTimeout(() => {
+          if (state.mqttConnected) {
+            publishCmd({ action: 'servo', value: 50 });
+          } else {
+            state.servoCmd = 50;
+            updateServoUI();
+          }
+
+          setTimeout(() => {
+            state.feedingStage = 4;
+            updateStep(4);
+            if (state.mqttConnected) {
+              publishCmd({ action: 'ssr', value: 1 });
+            } else {
+              state.ssrOn = true;
+              updateSSRUI();
+            }
+            showToast('💨 Blower ON, meniup pakan...', 'info');
+
+            if (!state.mqttConnected) {
+              state.blowInterval = setInterval(() => {
+                state.currentWeight -= 60;
+                if (state.currentWeight <= 0) {
+                  state.currentWeight = 0;
+                  els.weight.textContent = '0';
+                  clearInterval(state.blowInterval);
+                  finishSequence();
+                }
+                els.weight.textContent = Math.round(Math.max(0, state.currentWeight));
+              }, 200);
+            } else {
+              waitForEmptyLoadcell();
+            }
+          }, 1500);
+        }, 1000);
+      }
+
+      function waitForEmptyLoadcell() {
+        if (!state.isFeeding) return;
+        if (state.currentWeight <= 5) {
+          finishSequence();
+        } else {
+          setTimeout(waitForEmptyLoadcell, 300);
+        }
+      }
+
+      function finishSequence() {
+        if (state.mqttConnected) {
+          publishCmd({ action: 'ssr', value: 0 });
+          setTimeout(() => publishCmd({ action: 'servo', value: 0 }), 500);
+        } else {
+          state.ssrOn = false;
+          state.servoCmd = 0;
+          updateSSRUI();
+          updateServoUI();
+        }
+
+        state.isFeeding = false;
+        state.feedingStage = 0;
+        els.progressWrap.classList.remove('active');
+        updateComponentStatus();
+        els.note.textContent = 'Selesai • Sistem siap';
+        showToast('✅ Feeding selesai!', 'success');
+        addHistory(state.target);
+        resetFlowUI();
+      }
+
+      function updateStep(s) {
+        Object.values(els.steps).forEach(e => e.classList.remove('active', 'done'));
+        for (let i = 1; i < s; i++) els.steps[i]?.classList.add('done');
+        if (s <= 4) els.steps[s]?.classList.add('active');
+      }
+
+      function updateProg() {
+        const p = Math.min(100, Math.round((state.currentWeight / state.target) * 100));
+        els.progFill.style.width = p + '%';
+        els.progPct.textContent = p + '%';
+      }
+
+      function resetFlowUI() {
+        Object.values(els.steps).forEach(e => e.classList.remove('active', 'done'));
+        els.progFill.style.width = '0%';
+        els.progPct.textContent = '0%';
+      }
+
+      // ==================== SCHEDULE ====================
+      els.toggleSched.onclick = () => {
+        els.scheduleBox.classList.toggle('active');
+        els.toggleSched.textContent = els.scheduleBox.classList.contains('active') ? '📅 Sembunyikan Jadwal' : '📅 Tampilkan Jadwal';
+      };
+
+      els.addS.onclick = () => {
+        const t = els.schedTime.value;
+        if (!t) return showToast('Pilih jam', 'error');
+        const days = Array.from(document.querySelectorAll('.day-checks input:checked')).map(c => parseInt(c.value));
+        if (days.length === 0) return showToast('Pilih minimal 1 hari', 'error');
+        state.schedules.push({ id: Date.now(), time: t, days, active: true });
+        state.schedules.sort((a, b) => a.time.localeCompare(b.time));
+        renderSchedules();
+        showToast('✓ Jadwal ditambahkan', 'success');
+      };
+
+      function renderSchedules() {
+        els.schedList.innerHTML = state.schedules.length === 0 
+          ? '<div style="color:var(--muted);font-size:12px;text-align:center;">Belum ada jadwal</div>'
+          : state.schedules.map(s => `
+            <div class="schedule-item">
+              <span><b>${s.time}</b> • ${s.days.map(getDayName).join(', ')}</span>
+              <button class="btn btn-sm" onclick="this.closest('.schedule-item').remove()" style="color:var(--red);">✕</button>
+            </div>`).join('');
+      }
+      renderSchedules();
+
+      // ==================== EVENT LISTENERS ====================
+      els.mqttConnectBtn.onclick = connectMQTT;
+      els.btnMotor.onclick = sendMotorCommand;
+      els.btnSSR.onclick = sendSSRCommand;
+      els.btnServo.onclick = sendServoCommand;
+      els.feedBtn.onclick = startFeedingSequence;
+      els.saveT.onclick = () => {
+        const v = parseInt(els.target.value);
+        if (isNaN(v) || v < 500) return showToast('Target 500-10000 gram', 'error');
+        state.target = v;
+        showToast('✓ Target: ' + v + ' gram', 'success');
+      };
+
+      // ==================== HISTORY ====================
+      function addHistory(weight) {
+        const now = new Date();
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<div>${pad(now.getHours())}:${pad(now.getMinutes())}</div><span>${weight} g</span><span class="badge ok">✓</span>`;
+        els.hist.insertBefore(div, els.hist.firstChild);
+        if (els.hist.children.length > 5) els.hist.removeChild(els.hist.lastChild);
+        if (els.hist.children[0]?.textContent?.includes('Belum ada')) els.hist.innerHTML = '';
+      }
+
+      // ==================== TOAST ====================
+      function showToast(msg, type = 'info') {
+        els.toast.textContent = msg;
+        els.toast.className = `toast ${type} show`;
+        setTimeout(() => els.toast.classList.remove('show'), 3000);
+      }
+
+      // ==================== CLOCK ====================
+      setInterval(() => {
+        const now = new Date();
+        const clockEl = document.getElementById('ntpClock');
+        if (clockEl) clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        
+        if (state.schedules.length > 0 && !state.isFeeding) {
+          const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+          const currentDay = now.getDay();
+          state.schedules.forEach(s => {
+            if (s.active && s.time === currentTime && s.days.includes(currentDay)) {
+              const dateKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+              const key = `${s.id}_${dateKey}`;
+              if (!state.triggeredKeys.has(key)) {
+                state.triggeredKeys.add(key);
+                showToast('⏰ Jadwal feeding: ' + s.time, 'info');
+                startFeedingSequence();
+              }
+            }
+          });
+        }
+      }, 1000);
+
+      // Initial UI
+      updateMQTTUI(false);
+      updateMotorUI();
+      updateSSRUI();
+      updateServoUI();
+      els.encoderVal.textContent = '-';
+    })();
   </script>
 </body>
 </html>
