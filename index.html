@@ -113,10 +113,99 @@
     }
     .servo-svg.active { animation: servoPulse 1.5s infinite; }
 
+    /* Feeding Calculator Styles */
+    .calc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .calc-field {
+      background: #f8fbfb;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+    .calc-field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .calc-field input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      background: white;
+    }
+    .calc-field input:focus {
+      outline: 2px solid var(--teal);
+      border-color: var(--teal);
+    }
+    .calc-field .value-display {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--teal-dark);
+      padding: 4px 0;
+    }
+    .calc-field .unit {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+    .monitoring-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid var(--line);
+    }
+    .monitor-item {
+      text-align: center;
+      background: #f8fbfb;
+      padding: 12px 8px;
+      border-radius: 8px;
+    }
+    .monitor-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .monitor-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--teal-dark);
+      margin-top: 4px;
+    }
+    .monitor-value .unit {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+    .phase-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--teal);
+      color: white;
+    }
+
     @media (max-width: 600px) {
       .control-grid { grid-template-columns: 1fr 1fr; }
       .component-status { grid-template-columns: 1fr 1fr; }
       .flow-diagram::before { display: none; }
+      .calc-grid { grid-template-columns: 1fr; }
+      .monitoring-grid { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -125,7 +214,7 @@
     <header>
       <div class="brand">
         <div class="brand-mark">
-          <img src="udang.png">   
+          <img src="udang.png" alt="🦐" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2745%27 fill=%27%230f8b8d%27/%3E%3Ctext x=%2750%27 y=%2762%27 text-anchor=%27middle%27 fill=%27white%27 font-size=%2745%27%3E🦐%3C/text%3E%3C/svg%3E'">
         </div>
         <h1>shrimp feeder</h1>
       </div>
@@ -137,6 +226,62 @@
         </div>
       </div>
     </header>
+
+    <!-- FEEDING CALCULATOR -->
+    <div class="card">
+      <h2 class="card-title">📊 Kalkulator Pakan Udang</h2>
+      <div class="calc-grid">
+        <div class="calc-field">
+          <label>📅 Umur Udang (Hari)</label>
+          <input type="number" id="shrimpAge" min="1" max="105" value="30" onchange="calculateFeed()">
+        </div>
+        <div class="calc-field">
+          <label>🦐 Jumlah Udang (Ekor)</label>
+          <input type="number" id="shrimpPopulation" min="1" value="1000" onchange="calculateFeed()">
+        </div>
+        <div class="calc-field">
+          <label>⚖️ Berat Rata-rata (Gram/Ekor)</label>
+          <input type="number" id="shrimpWeight" min="0.1" step="0.1" value="5" onchange="calculateFeed()">
+        </div>
+      </div>
+
+      <!-- MONITORING -->
+      <div class="monitoring-grid">
+        <div class="monitor-item">
+          <div class="monitor-label">📅 Umur Udang</div>
+          <div class="monitor-value"><span id="displayAge">30</span> <span class="unit">Hari</span></div>
+          <div style="margin-top:4px;"><span class="phase-badge" id="displayPhase">Grower</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">🦐 Populasi</div>
+          <div class="monitor-value"><span id="displayPopulation">1,000</span> <span class="unit">Ekor</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">⚖️ Berat Rata-rata</div>
+          <div class="monitor-value"><span id="displayWeight">5.0</span> <span class="unit">Gram</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">📊 Biomassa</div>
+          <div class="monitor-value"><span id="displayBiomass">5.0</span> <span class="unit">Kg</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">📈 FR (Feeding Rate)</div>
+          <div class="monitor-value"><span id="displayFR">6.0</span> <span class="unit">%</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">🍽️ Pakan Harian</div>
+          <div class="monitor-value"><span id="displayDailyFeed">0.30</span> <span class="unit">Kg</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">🔄 Pakan/Tebar</div>
+          <div class="monitor-value"><span id="displayPerFeed">0.10</span> <span class="unit">Kg</span></div>
+        </div>
+        <div class="monitor-item">
+          <div class="monitor-label">🎯 Rekomendasi Target</div>
+          <div class="monitor-value"><span id="displayTarget">100</span> <span class="unit">Gram</span></div>
+        </div>
+      </div>
+    </div>
 
     <!-- ALUR SISTEM -->
     <div class="card">
@@ -167,7 +312,7 @@
 
       <!-- TARGET BERAT -->
       <div class="target-row">
-        <div class="field"><label>⚖️ Min Berat 500 Gram  </label><input type="number" id="targetInput" min="500" max="10000" step="10" value="1000"></div>
+        <div class="field"><label>⚖️ Target Berat Pakan (Gram) </label><input type="number" id="targetInput" min="50" max="10000" step="10" value="100"></div>
         <button class="btn btn-sm" id="saveTargetBtn">💾 Simpan</button>
       </div>
 
@@ -269,9 +414,58 @@
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script>
     (function() {
+      // ==================== FEED CALCULATOR ====================
+      function getPhase(age) {
+        if (age >= 1 && age <= 14) return { name: 'Starter', fr: 12.5, frMin: 10, frMax: 15 };
+        if (age >= 15 && age <= 28) return { name: 'Early Grower', fr: 9, frMin: 8, frMax: 10 };
+        if (age >= 29 && age <= 56) return { name: 'Grower', fr: 6, frMin: 4, frMax: 8 };
+        if (age >= 57 && age <= 105) return { name: 'Finisher', fr: 3, frMin: 2, frMax: 4 };
+        return { name: 'Unknown', fr: 0, frMin: 0, frMax: 0 };
+      }
+
+      window.calculateFeed = function() {
+        const age = parseInt(document.getElementById('shrimpAge').value) || 30;
+        const population = parseInt(document.getElementById('shrimpPopulation').value) || 1000;
+        const weight = parseFloat(document.getElementById('shrimpWeight').value) || 5;
+
+        // Get phase
+        const phase = getPhase(age);
+        
+        // Calculate Biomassa (Kg)
+        const biomass = (population * weight) / 1000;
+        
+        // Calculate Daily Feed (Kg)
+        const dailyFeed = biomass * (phase.fr / 100);
+        
+        // Calculate Feed per Feeding (assuming 3x feeding per day)
+        const feedPerFeeding = dailyFeed / 3;
+
+        // Calculate recommended target (in grams)
+        const targetGrams = Math.round(feedPerFeeding * 1000);
+
+        // Update display
+        document.getElementById('displayAge').textContent = age;
+        document.getElementById('displayPhase').textContent = phase.name;
+        document.getElementById('displayPhase').style.background = 
+          phase.name === 'Starter' ? '#2f9e44' :
+          phase.name === 'Early Grower' ? '#0f8b8d' :
+          phase.name === 'Grower' ? '#d9822b' : '#d64545';
+        
+        document.getElementById('displayPopulation').textContent = population.toLocaleString();
+        document.getElementById('displayWeight').textContent = weight.toFixed(1);
+        document.getElementById('displayBiomass').textContent = biomass.toFixed(2);
+        document.getElementById('displayFR').textContent = phase.fr.toFixed(1);
+        document.getElementById('displayDailyFeed').textContent = dailyFeed.toFixed(2);
+        document.getElementById('displayPerFeed').textContent = feedPerFeeding.toFixed(2);
+        document.getElementById('displayTarget').textContent = targetGrams;
+
+        // Update target input
+        document.getElementById('targetInput').value = targetGrams;
+      };
+
       // ==================== STATE ====================
       const state = {
-        target: 1000,
+        target: 100,
         currentWeight: 0,
         encoderCount: 0,
         motorOpen: false,
@@ -531,7 +725,7 @@
       function startFeedingSequence() {
         if (state.isFeeding) return;
         const target = parseInt(els.target.value);
-        if (isNaN(target) || target < 500) return showToast('Target minimal 500 gram', 'error');
+        if (isNaN(target) || target < 50) return showToast('Target minimal 50 gram', 'error');
         state.target = target;
 
         state.isFeeding = true;
@@ -558,7 +752,7 @@
           if (!state.mqttConnected) {
             state.simInterval = setInterval(() => {
               if (!state.isFeeding) { clearInterval(state.simInterval); return; }
-              state.currentWeight += 40;
+              state.currentWeight += 20;
               if (state.currentWeight >= state.target) {
                 state.currentWeight = state.target;
                 els.weight.textContent = Math.round(state.currentWeight);
@@ -618,7 +812,7 @@
 
             if (!state.mqttConnected) {
               state.blowInterval = setInterval(() => {
-                state.currentWeight -= 60;
+                state.currentWeight -= 30;
                 if (state.currentWeight <= 0) {
                   state.currentWeight = 0;
                   els.weight.textContent = '0';
@@ -718,7 +912,7 @@
       els.feedBtn.onclick = startFeedingSequence;
       els.saveT.onclick = () => {
         const v = parseInt(els.target.value);
-        if (isNaN(v) || v < 500) return showToast('Target 500-10000 gram', 'error');
+        if (isNaN(v) || v < 50) return showToast('Target 50-10000 gram', 'error');
         state.target = v;
         showToast('✓ Target: ' + v + ' gram', 'success');
       };
@@ -763,6 +957,9 @@
           });
         }
       }, 1000);
+
+      // Initial calculation
+      window.calculateFeed();
 
       // Initial UI
       updateMQTTUI(false);
